@@ -5,8 +5,7 @@ from pycuda.compiler import SourceModule
 import numpy as np
 import cv2
 
-# Librarynya rada ngecheat jadi bikin dua versi
-# kaya kurang gimana gitu kalo ga nyentuh kernel cuda
+# Kaya kurang gimana gitu kalo ga nyentuh kernel cuda
 
 cuda_kernel = """
 __global__ void grayscale(const float* input, float* output, uint64_t size) {

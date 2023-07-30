@@ -6,6 +6,7 @@ from sotosop import *
 
 class Camera(QObject):
     finished = pyqtSignal()
+    prep_finished = pyqtSignal()
     frame_available = pyqtSignal(np.ndarray)
 
     def __init__(self):
@@ -18,8 +19,10 @@ class Camera(QObject):
 
         print("Loading camera...")
         camera = cv2.VideoCapture(0)
+        print("Camera is ready")
+        self.prep_finished.emit()
+
         while self.running:
-            print("Camera is running")
             ret, frame = camera.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -104,14 +107,120 @@ class ImageViewerApp(QMainWindow):
         
         self.camera_thread = Camera()
         self.camera_thread.moveToThread(self.worker_thread)
+        self.camera_thread.frame_available.connect(self.show_frame)
+        self.camera_thread.prep_finished.connect(self.ready_camera)
         self.camera_thread.finished.connect(self.off_camera)
-        
         self.worker_thread.started.connect(self.camera_thread.run)
         
+        self.gs_button.setDisabled(True)
+        self.edge_button.setDisabled(True)
         self.contrast_slider.setDisabled(True)
         self.saturation_slider.setDisabled(True)
         self.blur_slider.setDisabled(True)
 
+    def on_camera(self, checked):
+        if checked:
+            self.camera.setText('Camera: ON')
+            self.cameraMode = True
+
+            self.pick_button.setDisabled(True)
+            self.gs_button.setDisabled(True)
+            self.edge_button.setDisabled(True)
+            self.contrast_slider.setDisabled(True)
+            self.saturation_slider.setDisabled(True)
+            self.blur_slider.setDisabled(True)
+
+            self.worker_thread.start()
+
+        else:    
+            self.gs_button.setDisabled(True)
+            self.edge_button.setDisabled(True)
+            self.contrast_slider.setDisabled(True)
+            self.saturation_slider.setDisabled(True)
+            self.blur_slider.setDisabled(True)
+            
+            self.gs_button.setText('Grayscale: OFF')
+            self.gs_button.setCheckable(True)
+            self.gs_button.setChecked(False)
+            self.gsMode = False
+            self.edge_button.setText('Edge View: OFF')
+            self.edge_button.setCheckable(True)
+            self.edge_button.setChecked(False)
+            self.edgeMode = False
+            self.contrast_slider.setValue(0)
+            self.saturation_slider.setValue(0)
+            self.blur_slider.setValue(0)
+            self.contrast_slider.setDisabled(True)
+            self.saturation_slider.setDisabled(True)
+            self.blur_slider.setDisabled(True)
+            self.image_path = ""
+            self.image_label.clear()
+
+            self.camera.setText('Camera: OFF')
+            self.cameraMode = False
+            self.camera_thread.stop()
+    
+    def ready_camera(self):
+        self.pick_button.setDisabled(False)
+        self.gs_button.setDisabled(False)
+        self.edge_button.setDisabled(False)
+        self.contrast_slider.setDisabled(False)
+        self.saturation_slider.setDisabled(False)
+        self.blur_slider.setDisabled(False)
+
+        self.gs_button.setText('Grayscale: OFF')
+        self.gs_button.setCheckable(True)
+        self.gs_button.setChecked(False)
+        self.gsMode = False
+        
+        self.edge_button.setText('Edge View: OFF')
+        self.edge_button.setCheckable(True)
+        self.edge_button.setChecked(False)
+        self.edgeMode = False
+        
+        self.contrast_slider.setValue(0)
+        self.saturation_slider.setValue(0)
+        self.blur_slider.setValue(0)
+
+        self.image_path = ""
+        self.image_label.clear()
+
+    def off_camera(self):
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        print("Camera is stopped")
+
+    def show_frame(self, frame):
+        processed_image = frame
+        if self.gsMode:
+            processed_image = process_image(processed_image.astype(np.float32), "grayscale")
+        if self.edgeMode:
+            processed_image = process_image(processed_image.astype(np.float32), "edge")
+        if self.contrastVal != 1:
+            processed_image = process_image(processed_image.astype(np.float32), "contrast", self.contrastVal)
+        if self.saturationVal != 1:
+            processed_image = process_image(processed_image.astype(np.float32), "saturation", self.saturationVal)
+        if self.blurVal != 0:
+            processed_image = process_image(processed_image.astype(np.float32), "blur", self.blurVal)
+        
+        processed_image = processed_image.astype(np.uint8)
+
+        height, width, channel = processed_image.shape
+        bytes_per_line = 3 * width
+        q_image = QImage(processed_image.data, width, height, bytes_per_line, QImage.Format_RGB888)
+
+        pixmap = QPixmap.fromImage(q_image)
+
+        aspect_ratio = pixmap.width() / pixmap.height()
+
+        if self.imglabelmaxwidth / self.imglabelmaxheight > aspect_ratio:
+            self.pic_scale = int(self.imglabelmaxheight * aspect_ratio)
+            self.image_label.setPixmap(pixmap.scaledToWidth(self.pic_scale))
+        else:
+            self.pic_scale = int(self.imglabelmaxwidth / aspect_ratio)
+            self.image_label.setPixmap(pixmap.scaledToHeight(self.pic_scale))
+
+        self.image_label.setPixmap(pixmap)
 
     def pick_image(self):
         options = QFileDialog.Options()
@@ -120,71 +229,28 @@ class ImageViewerApp(QMainWindow):
             self.load_image(file_name)
 
     def on_grayscale(self, checked):
-        if self.image_path:
-            if checked:
-                self.gs_button.setText('Grayscale: ON')
-                self.gsMode = True
+        if checked:
+            self.gs_button.setText('Grayscale: ON')
+            self.gsMode = True
+            if self.image_path:
                 self.update_image()
-            else:
-                self.gs_button.setText('Grayscale: OFF')
-                self.gsMode = False
+        else:
+            self.gs_button.setText('Grayscale: OFF')
+            self.gsMode = False
+            if self.image_path:
                 self.update_image()
 
     def on_edge(self, checked):
-        if self.image_path:
-            if checked:
-                self.edge_button.setText('Edge View: ON')
-                self.edgeMode = True
-                self.update_image()
-            else:
-                self.edge_button.setText('Edge View: OFF')
-                self.edgeMode = False
-                self.update_image()
-
-    def on_camera(self, checked):
         if checked:
-            self.camera.setText('Camera: ON')
-            self.cameraMode = True
+            self.edge_button.setText('Edge View: ON')
+            self.edgeMode = True
             if self.image_path:
-                self.gs_button.setText('Grayscale: OFF')
-                self.gs_button.setCheckable(False)
-                self.gs_button.setChecked(False)
-                self.gsMode = False
-                self.edge_button.setText('Edge View: OFF')
-                self.edge_button.setCheckable(False)
-                self.edge_button.setChecked(False)
-                self.edgeMode = False
-                self.contrast_slider.setValue(0)
-                self.saturation_slider.setValue(0)
-                self.blur_slider.setValue(0)
-                self.contrast_slider.setDisabled(True)
-                self.saturation_slider.setDisabled(True)
-                self.blur_slider.setDisabled(True)
-                self.image_path = ""
-                self.image_label.clear()
-            self.worker_thread.start()
-
+                self.update_image()
         else:
-            self.camera.setText('Camera: OFF')
-            self.cameraMode = False
-            self.camera_thread.stop()
-    
-    def off_camera(self):
-        self.worker_thread.quit()
-        self.worker_thread.wait()
-        print("Camera is stopped")
-
-    def show_frame(self, frame):
-        # Convert the NumPy array to QImage
-        height, width, channel = frame.shape
-        bytes_per_line = 3 * width
-        q_image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
-
-        # Create a QPixmap from the QImage
-        pixmap = QPixmap.fromImage(q_image)
-
-        # Display the frame in the QLabel
-        self.image_label.setPixmap(pixmap)
+            self.edge_button.setText('Edge View: OFF')
+            self.edgeMode = False
+            if self.image_path:
+                self.update_image()
 
     def on_contrast_change(self):
         slider_value = self.contrast_slider.value()
@@ -212,42 +278,47 @@ class ImageViewerApp(QMainWindow):
             
 
     def load_image(self, image_path):
-        self.cameraMode = False
-
-        self.image_path = image_path
-        self.cv_image = cv2.imread(self.image_path)
-
-        self.gs_button.setCheckable(True)
-        self.edge_button.setCheckable(True)
-        self.contrast_slider.setValue(0)
-        self.saturation_slider.setValue(0)
-        self.blur_slider.setValue(0)
-
-        self.contrast_slider.setDisabled(False)
-        self.saturation_slider.setDisabled(False)
-        self.blur_slider.setDisabled(False)
-
-
-        rgb_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
-
-        self.height, self.width, self.channel = rgb_image.shape
-        self.bytes_per_line = 3 * self.width
-        q_image = QImage(rgb_image.data, self.width, self.height, self.bytes_per_line, QImage.Format_RGB888)
-
-        pixmap = QPixmap.fromImage(q_image)
-
-        aspect_ratio = pixmap.width() / pixmap.height()
-
-        if self.imglabelmaxwidth / self.imglabelmaxheight > aspect_ratio:
-            self.pic_scale = int(self.imglabelmaxheight * aspect_ratio)
-            self.image_label.setPixmap(pixmap.scaledToWidth(self.pic_scale))
-            self.pic_scale_method = "width"
-        else:
-            self.pic_scale = int(self.imglabelmaxwidth / aspect_ratio)
-            self.image_label.setPixmap(pixmap.scaledToHeight(self.pic_scale))
-            self.pic_scale_method = "height"
+        if self.cameraMode:
+            self.camera.setText('Camera: OFF')
+            self.cameraMode = False
+            self.camera_thread.stop()
         
+        if self.image_path != None:
+            self.image_path = image_path
+            self.cv_image = cv2.imread(self.image_path)
 
+            self.gs_button.setCheckable(True)
+            self.edge_button.setCheckable(True)
+            self.contrast_slider.setValue(0)
+            self.saturation_slider.setValue(0)
+            self.blur_slider.setValue(0)
+
+            self.gs_button.setDisabled(False)
+            self.edge_button.setDisabled(False)
+            self.contrast_slider.setDisabled(False)
+            self.saturation_slider.setDisabled(False)
+            self.blur_slider.setDisabled(False)
+
+
+            rgb_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
+
+            self.height, self.width, self.channel = rgb_image.shape
+            self.bytes_per_line = 3 * self.width
+            q_image = QImage(rgb_image.data, self.width, self.height, self.bytes_per_line, QImage.Format_RGB888)
+
+            pixmap = QPixmap.fromImage(q_image)
+
+            aspect_ratio = pixmap.width() / pixmap.height()
+
+            if self.imglabelmaxwidth / self.imglabelmaxheight > aspect_ratio:
+                self.pic_scale = int(self.imglabelmaxheight * aspect_ratio)
+                self.image_label.setPixmap(pixmap.scaledToWidth(self.pic_scale))
+                self.pic_scale_method = "width"
+            else:
+                self.pic_scale = int(self.imglabelmaxwidth / aspect_ratio)
+                self.image_label.setPixmap(pixmap.scaledToHeight(self.pic_scale))
+                self.pic_scale_method = "height"
+        
     def update_image(self):
         processed_image = self.cv_image
         if self.gsMode:
@@ -264,8 +335,6 @@ class ImageViewerApp(QMainWindow):
         processed_image = processed_image.astype(np.uint8)
         rgb_image = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
 
-        self.height, self.width, self.channel = rgb_image.shape
-        self.bytes_per_line = 3 * self.width
         q_image = QImage(rgb_image.data, self.width, self.height, self.bytes_per_line, QImage.Format_RGB888)
 
         pixmap = QPixmap.fromImage(q_image)
