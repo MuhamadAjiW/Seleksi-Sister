@@ -5,6 +5,7 @@ import threading as td
 import multiprocessing as mp
 
 # Librarynya rada ngecheat jadi bikin dua versi
+# Cek versi cudanya cuy dijamin gacor
 def grayscale(image, row, cols):
     for col in range(0, cols):
         image[row, col] = cupy.sum(image[row, col]) / 3
