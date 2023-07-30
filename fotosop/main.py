@@ -4,10 +4,35 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from sotosop import *
 
+class Camera(QObject):
+    finished = pyqtSignal()
+    frame_available = pyqtSignal(np.ndarray)
+
+    def __init__(self):
+        super().__init__()
+        self.running = True
+
+    def run(self):
+        print(self.running)
+        self.running = True
+
+        print("Loading camera...")
+        camera = cv2.VideoCapture(0)
+        while self.running:
+            print("Camera is running")
+            ret, frame = camera.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.flip(frame, 1)
+                self.frame_available.emit(frame)
+        self.finished.emit()
+
+    def stop(self):
+        self.running = False
+
 class ImageViewerApp(QMainWindow):
     def __init__(self):
         super().__init__()
-
         self.initUI()
 
     def initUI(self):
@@ -68,12 +93,31 @@ class ImageViewerApp(QMainWindow):
         self.blur_slider.valueChanged.connect(self.on_blur_change)
         self.blurVal = 0
 
+        self.camera = QPushButton('Camera: OFF', self)
+        self.camera.move(1060, 600)
+        self.camera.resize(160, 30)
+        self.camera.setCheckable(True)
+        self.camera.toggled.connect(self.on_camera) 
+        self.cameraMode = False
+
+        self.worker_thread = QThread()
+        
+        self.camera_thread = Camera()
+        self.camera_thread.moveToThread(self.worker_thread)
+        self.camera_thread.finished.connect(self.off_camera)
+        
+        self.worker_thread.started.connect(self.camera_thread.run)
+        
+        self.contrast_slider.setDisabled(True)
+        self.saturation_slider.setDisabled(True)
+        self.blur_slider.setDisabled(True)
+
 
     def pick_image(self):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getOpenFileName(self, "Pick an image", "", "Images (*.png *.jpg *.bmp);;All Files (*)", options=options)
         if file_name:
-            self.show_image(file_name)
+            self.load_image(file_name)
 
     def on_grayscale(self, checked):
         if self.image_path:
@@ -96,6 +140,51 @@ class ImageViewerApp(QMainWindow):
                 self.edge_button.setText('Edge View: OFF')
                 self.edgeMode = False
                 self.update_image()
+
+    def on_camera(self, checked):
+        if checked:
+            self.camera.setText('Camera: ON')
+            self.cameraMode = True
+            if self.image_path:
+                self.gs_button.setText('Grayscale: OFF')
+                self.gs_button.setCheckable(False)
+                self.gs_button.setChecked(False)
+                self.gsMode = False
+                self.edge_button.setText('Edge View: OFF')
+                self.edge_button.setCheckable(False)
+                self.edge_button.setChecked(False)
+                self.edgeMode = False
+                self.contrast_slider.setValue(0)
+                self.saturation_slider.setValue(0)
+                self.blur_slider.setValue(0)
+                self.contrast_slider.setDisabled(True)
+                self.saturation_slider.setDisabled(True)
+                self.blur_slider.setDisabled(True)
+                self.image_path = ""
+                self.image_label.clear()
+            self.worker_thread.start()
+
+        else:
+            self.camera.setText('Camera: OFF')
+            self.cameraMode = False
+            self.camera_thread.stop()
+    
+    def off_camera(self):
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        print("Camera is stopped")
+
+    def show_frame(self, frame):
+        # Convert the NumPy array to QImage
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        q_image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
+
+        # Create a QPixmap from the QImage
+        pixmap = QPixmap.fromImage(q_image)
+
+        # Display the frame in the QLabel
+        self.image_label.setPixmap(pixmap)
 
     def on_contrast_change(self):
         slider_value = self.contrast_slider.value()
@@ -122,12 +211,22 @@ class ImageViewerApp(QMainWindow):
             self.update_image()
             
 
-    def show_image(self, image_path):
+    def load_image(self, image_path):
+        self.cameraMode = False
+
         self.image_path = image_path
+        self.cv_image = cv2.imread(self.image_path)
+
         self.gs_button.setCheckable(True)
         self.edge_button.setCheckable(True)
+        self.contrast_slider.setValue(0)
+        self.saturation_slider.setValue(0)
+        self.blur_slider.setValue(0)
 
-        self.cv_image = cv2.imread(self.image_path)
+        self.contrast_slider.setDisabled(False)
+        self.saturation_slider.setDisabled(False)
+        self.blur_slider.setDisabled(False)
+
 
         rgb_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
 
