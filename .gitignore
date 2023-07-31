@@ -1,5 +1,9 @@
+restoregrub/problemset
+*.iso
+
 # Prerequisites
 *.d
+
 
 # Object files
 *.o
