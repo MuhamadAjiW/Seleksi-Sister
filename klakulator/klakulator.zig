@@ -1,7 +1,4 @@
-const std = @import("std");
-
-//Kind of a joke, but it works
-//di zig gaada goto co wtf
+//di zig gaada goto co wtf tanggung jawab
 
 fn leftmostloc(a: i32) i32 {
     const edge: u32 = 1 << 31;
@@ -818,20 +815,281 @@ fn div(a: i32, b: i32) i32 {
     }
 }
 
-pub fn main() void {
-    var num1: i32 = 1024;
-    var num2: i32 = 10;
-    std.debug.print("Hello, {s}!\n", .{"World"});
+fn exp(a: i32, b: i32) i32 {
+    var x: i32 = a;
+    var y: i32 = b;
 
-    var result: i32 = add(num1, num2);
-    std.debug.print("Addition is: {d}\n", .{result});
+    var result: i32 = 1;
+    var bitone: i32 = 1;
 
-    result = subtr(num1, num2);
-    std.debug.print("Decrement is: {d}\n", .{result});
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
 
-    result = mult(num1, num2);
-    std.debug.print("Multiplication is: {d}\n", .{result});
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
 
-    result = div(num1, num2);
-    std.debug.print("Division is: {d}\n", .{result});
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    if (y == 0) return result;
+    bitone = y & 1;
+    if (bitone == 1) result = mult(result, x);
+    x = mult(x, x);
+    y = y >> 1;
+
+    return result;
+}
+
+// mesin kata dulu gak sih
+fn stream_procnum(string: []const u8, pointer: *i32) i32 {
+    var result: i32 = 0;
+    var negative: bool = false;
+
+    if (string[0] == '-') {
+        negative = true;
+        pointer.* = add(pointer.*, 1);
+    }
+
+    while (string[@intCast(usize, pointer.*)] >= '0' and string[@intCast(usize, pointer.*)] < '9') {
+        result = add(mult(result, 10), (string[@intCast(usize, pointer.*)] - '0'));
+        pointer.* = add(pointer.*, 1);
+    }
+    if (negative) {
+        return mult(-1, result);
+    } else {
+        return result;
+    }
+}
+
+fn stream_skipws(string: []const u8, pointer: *i32) void {
+    while (string[@intCast(usize, pointer.*)] == ' ') {
+        pointer.* = add(pointer.*, 1);
+    }
+}
+
+const print = std.debug.print;
+const std = @import("std");
+pub fn main() !void {
+    const stdin = std.io.getStdIn().reader();
+
+    print("Enter a math expression: ", .{});
+    var expression: [64]u8 = undefined;
+    var pointer: i32 = 0;
+    var input = try stdin.readUntilDelimiterOrEof(&expression, '\n');
+    _ = input;
+
+    var operand1: i32 = 0;
+    var operand2: i32 = 0;
+    var operator: u8 = 0;
+    var valid: bool = true;
+
+    stream_skipws(&expression, &pointer);
+    operand1 = stream_procnum(&expression, &pointer);
+    while (expression[@intCast(usize, pointer)] != '\n' and expression[@intCast(usize, pointer)] != '\r' and valid) {
+        stream_skipws(&expression, &pointer);
+
+        if (expression[@intCast(usize, pointer)] == '\n' and expression[@intCast(usize, pointer)] == '\r') {
+            break;
+        }
+
+        operator = expression[@intCast(usize, pointer)];
+        pointer = add(pointer, 1);
+        stream_skipws(&expression, &pointer);
+
+        operand2 = stream_procnum(&expression, &pointer);
+
+        switch (operator) {
+            '+' => {
+                operand1 = add(operand1, operand2);
+            },
+            '-' => {
+                operand1 = subtr(operand1, operand2);
+            },
+            '*' => {
+                operand1 = mult(operand1, operand2);
+            },
+            '/' => {
+                operand1 = div(operand1, operand2);
+            },
+            '^' => {
+                operand1 = exp(operand1, operand2);
+            },
+            else => {
+                print("Invalid operator\n", .{});
+                valid = false;
+            },
+        }
+    }
+    print("Result: {d}\n", .{operand1});
 }
