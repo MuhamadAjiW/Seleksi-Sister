@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <h1>Data Page</h1>
+    
+    <h2 id="Subtitle">
+        Yah ini buat visualisasi aja frontend asal-asalan
+    </h2>
+
+</head>
+
+
+<body>
+    <button onclick="showadd()">Add</button>
+    <button onclick="showdel()">Delete</button>
+    <button onclick="hide()">Hide Form</button>
+    
+    <p id="response">
+    </p>
+
+    <form id="addform" style="display: none;">
+        <textarea id="nameinput" placeholder="Name" rows="1" cols="50"></textarea><br>
+        <textarea id="heightinput" placeholder="Height" rows="1" cols="50"></textarea><br>
+        <textarea id="descinput" placeholder="Description" rows="1" cols="50"></textarea><br>
+        <button onclick="add()">Add</button>
+    </form>
+
+    <form id="delform" style="display: none;">
+        <textarea id="nameinput" placeholder="Name" rows="1" cols="50"></textarea>
+        <br>
+        <button onclick="del()">Delete</button>
+    </form>
+    
+
+
+    <p id="content">
+        test
+    </p>
+
+    <button onclick="toHome()">Ke home</button>
+</body>
+
+<script>
+    const url = 'http://localhost:12345';
+
+    // Display related functions
+    function showadd() {
+        var addform = document.getElementById("addform");
+        var delform = document.getElementById("delform");
+
+        if(addform.style.display = "none"){
+            addform.style.display = "block";
+            delform.style.display = "none";
+        }
+    }
+    function showdel() {
+        var addform = document.getElementById("addform");
+        var delform = document.getElementById("delform");
+
+        if(delform.style.display = "none"){
+            addform.style.display = "none";
+            delform.style.display = "block";
+        }
+    }
+    function hide() {
+        var addform = document.getElementById("addform");
+        var delform = document.getElementById("delform");
+        addform.style.display = "none";
+        delform.style.display = "none";
+    }
+    function toHome() {
+        window.location.href = "home";
+    }
+    
+
+    // API related functions
+    function add(){
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/add", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        xhr.send();
+        // send(Data) harusnya, tapi belom di implement
+    }
+    function del() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/add", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        xhr.send();
+        // send(Data) harusnya, tapi belom di implement
+    }
+    function update(){
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", "/add", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        xhr.send();
+        // send(Data) harusnya, tapi belom di implement
+    }
+    function info(){
+        window.location.href = "home";
+    }
+
+</script>
+</html>
