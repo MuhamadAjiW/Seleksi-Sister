@@ -153,7 +153,7 @@ class Server():
             return Server_Response(content_type='image/webp', content=self.default_icon)
 
     def response(self, request_data):
-        # try:
+        try:
             print("Received data:") # LOG
             print(request_data) # LOG
             
@@ -185,14 +185,24 @@ class Server():
                         return self.routes.get(405)(query = kwargs).generate_response(self.server_name, keep_connection=False)
                     return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
 
+                elif request_type == 'GET':
+                    response = route_func(query = kwargs)
+                    # print("Route function: ", end=' ') # LOG
+                    # print(response) # LOG
+                    if type(response) == str:
+                        response = Server_Response(content=response)
 
-                response = route_func(query = kwargs)
-                # print("Route function: ", end=' ') # LOG
-                # print(response) # LOG
-                if type(response) == str:
-                    response = Server_Response(content=response)                
+                    return response.generate(self.server_name, keep_connection=False)
+                
+                #TODO: Implement other methods
+                elif request_type == 'PUT':
+                    raise Exception("PUT method is not implemented yet.")
+                
+                elif request_type == 'POST':
+                    raise Exception("POST method is not implemented yet.")
 
-                return response.generate(self.server_name, keep_connection=False)
+                elif request_type == 'DELETE':
+                    raise Exception("DELETE method is not implemented yet.")
             
             else:
                 print("ERROR: NOT FOUND") # LOG
@@ -201,13 +211,14 @@ class Server():
                 
                 return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
         
-        # except Exception as e:
-        #     print("ERROR: INTERNAL ERROR") # LOG
-        #     print(e.with_traceback) # LOG
-        #     if(self.routes.get(500)):
-        #         return self.routes.get(500)(request = "kwargs").generate_response(self.server_name, keep_connection=False)
+        except Exception as e:
+            print("ERROR: INTERNAL ERROR") # LOG
+            print(e.args)
+            print(e.with_traceback) # LOG
+            if(self.routes.get(500)):
+                return self.routes.get(500)(request = "kwargs").generate_response(self.server_name, keep_connection=False)
             
-        #     return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate_response(self.server_name, keep_connection=False)
+            return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate_response(self.server_name, keep_connection=False)
         
 
 # Functions to generate responses
