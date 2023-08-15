@@ -2,6 +2,7 @@ import socket
 import threading
 import re
 import os
+import copy
 
 # Response Class
 class Server_Response():
@@ -71,6 +72,7 @@ class Server():
         self.socket.listen(limit)
         self.running = False
         self.routes = {}
+        self.static_data = {}
 
         @self.route('/favicon.ico')
         def handle_favicon_route():
@@ -83,55 +85,43 @@ class Server():
         for root, dirs, files in os.walk(folder_path):
             for filename in files:
                 route_name = os.path.join(root, filename).replace('\\', '/')
-                # print(route_name) # LOG
+                print(route_name) # LOG
 
                 if(route_name.find(' ') != -1):
                     raise Exception(f"File name {route_name} contains spaces. Please remove them.")
 
                 file_type = filename.split('.')[-1]
-                # print(file_type) # LOG
-
-                func_name = f'handle_static_route_{self.static_counter}'
+                print(file_type) # LOG
 
                 if file_type == 'html':
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return html_response(route_name)
-                    
+                    with open(route_name, 'r') as f:
+                        reply_content = f.read()
+                    generate_static_response(self, route_name, content_type='text/html', content=reply_content)
+
                 elif file_type == 'css':
                     with open(route_name, 'r') as f:
                         reply_content = f.read()
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return Server_Response(content_type='text/csv', content=reply_content)
+                    generate_static_response(self, route_name, content_type='text/csv', content=reply_content)
                     
                 elif file_type == 'js':
                     with open(route_name, 'r') as f:
                         reply_content = f.read()
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return Server_Response(content_type='*/*', content=reply_content)
+                    generate_static_response(self, route_name, content_type='*/*', content=reply_content)
                     
                 elif file_type == 'webp':
                     with open(route_name, 'rb') as f:
                         reply_content= f.read()
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return Server_Response(content_type='image/webp', content=reply_content)
+                    generate_static_response(self, route_name, content_type='image/webp', content=reply_content)
                     
                 elif file_type == 'json':
                     with open(route_name, 'r') as f:
                         reply_content = f.read()
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return Server_Response(content_type='application/json', content=reply_content)
+                    generate_static_response(self, route_name, content_type='application/json', content=reply_content)
                 
                 elif file_type == 'txt':
                     with open(route_name, 'r') as f:
                         reply_content = f.read()
-                    @self.route('/' + route_name)
-                    def handle_file_route():
-                        return Server_Response(content_type='text/plain', content=reply_content)
+                    generate_static_response(self, route_name, content_type='text/plain', content=reply_content)
                                     
                 else:
                     raise Exception(f"File type {file_type} in static folder is not supported.")
@@ -149,6 +139,10 @@ class Server():
     def stop(self):
         self.running = False
         self.socket.close()
+
+    def route_setmanual(self, func, route, methods:list=['GET']):
+        self.routes[route] = func
+        self.routes[route].methods = methods
     
     def route(self, route, methods:list=['GET']):
         def decorator(func):
@@ -173,7 +167,7 @@ class Server():
             return Server_Response(content_type='image/webp', content=self.default_icon)
 
     def response(self, request_data):
-        try:
+        # try:
             print("Received data:") # LOG
             print(request_data) # LOG
             
@@ -189,8 +183,6 @@ class Server():
 
             if route_func:
                 print("ROUTE FOUND") # LOG
-                print("Route function: ", end=' ') # LOG
-                
 
                 if not (request_type in route_func.methods):
                     print("ERROR: NOT ALLOWED") # LOG
@@ -199,6 +191,7 @@ class Server():
                     return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate_response(self.server_name, keep_connection=False)
 
 
+                print("Route function: ", end=' ') # LOG
                 response = route_func()
                 print(response) # LOG
                 if type(response) == str:
@@ -212,12 +205,12 @@ class Server():
                 
                 return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate_response(self.server_name, keep_connection=False)
         
-        except:
-            print("ERROR: INTERNAL ERROR") # LOG
-            if(self.routes.get(500)):
-                return self.routes.get(500)().generate_response(self.server_name, keep_connection=False)
+        # except:
+        #     print("ERROR: INTERNAL ERROR") # LOG
+        #     if(self.routes.get(500)):
+        #         return self.routes.get(500)().generate_response(self.server_name, keep_connection=False)
             
-            return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate_response(self.server_name, keep_connection=False)
+        #     return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate_response(self.server_name, keep_connection=False)
         
 
 # Functions to generate responses
@@ -225,6 +218,11 @@ def html_response(html_page:str):
     with open(html_page, 'r') as f:
         content = f.read()
     return Server_Response(content_type='text/html', content=content)
+
+def generate_static_response(server: Server, route_name:str, content_type:str='*/*', content=''):
+    @server.route('/' + route_name)
+    def handle_file_route():
+        return Server_Response(content_type=content_type, content=content)
 
 if __name__ == "__main__":
     server = Server()
@@ -253,5 +251,12 @@ if __name__ == "__main__":
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
+    
+    # print(server.routes.get('/scripts/content.js')().generate_response().decode('utf-8'))
+    # print(server.routes.get('/scripts/home.js')().generate_response().decode('utf-8'))
+    # print(server.routes.get('/scripts/info.js'))
+    print(server.routes.get('/home'))
+    print(server.routes.get('/info'))
+
 
     server.run()
