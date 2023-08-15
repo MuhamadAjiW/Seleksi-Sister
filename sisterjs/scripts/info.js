@@ -4,19 +4,26 @@ function toContent() {
 }
 
 // API related functions
-function getQueryParam(name){
-    //TODO: Ini querynya make library, Coba handle make backendnya
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
+async function getQueryParam(name){
+    try{
+        const response = await fetch('/info/query');
+        const data = await response.json();
+        console.log(data);
+        console.log(data[name]);
+        return data[name];
+    } catch (error){
+        console.error("Error fetching JSON: ", error);
+    }
 }
 
-function loadPersonDetails(){
-    const index = getQueryParam('index');
+async function loadPersonDetails(){
+    let index = await getQueryParam('index');
     if(index != null){
 
         fetch('/data/people.json')
             .then(response => response.json())
             .then(data => {
+                index = parseInt(index);
                 const person = data[index];
                 console.log(person);
                 if(person){
