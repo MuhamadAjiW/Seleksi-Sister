@@ -1,7 +1,7 @@
 import requests
 
 def main():
-    url = 'http://localhost:12345'
+    url = 'http://localhost:5000/favvicon.ico'
     data = {'name': 'John'}
 
     response = requests.get(url, data=data)
