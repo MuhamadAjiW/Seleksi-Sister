@@ -6,12 +6,12 @@ if __name__ == "__main__":
     server = Server()
     
 
-    # Returnnya harus dalam bentuk Server_Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
+    # Returnnya harus dalam bentuk Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
     @server.route('/', methods=["GET"])
     def handle_home_route(request: Request):
         with open('home.html', 'r') as f:
             content = f.read()
-        return Server_Response(content_type='text/html', content=content)
+        return Response(content_type='text/html', content=content)
 
     @server.route('/about', methods=["GET"])
     def handle_about_route(request: Request):
@@ -32,7 +32,8 @@ if __name__ == "__main__":
         return html_response('info.html')
 
 
-    # Fitur Tambahan: args! bisa ngejadiin route sebagai argumen int atau str
+    # Fitur Tambahan: 
+    # args! bisa ngejadiin route sebagai argumen int atau str
     # NOTE: Kurang di debug. Ga optimizednya minta ampun
     @server.route('/api/dummydata', methods=["PUT"])
     def handle_home_route(request: Request, *args):
@@ -72,18 +73,29 @@ if __name__ == "__main__":
         return "Post or delete response with an int and a str, uhh in between"
 
 
+    # Middleware! ada 2 middle ware, before request sama after request (niru flask banget emang ini ehe)
+    @server.before_request()
+    def handle_before_request(request: Request):
+        print("Middleware before request")
+
+    @server.after_request()
+    def handle_before_request(request: Request):
+        print("Middleware after request")
+
+
     # Set icon
     server.set_icon('assets/favicon.webp')
 
 
-    # Folder bisa langsung diload semuanya buat method GET
+    # Folder bisa langsung diload semuanya dan rekursif ke dalem buat method GET
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
 
 
     # Set integrasi database
-    # Bikin sendiri perihal fungsi buat databasenya, kaga begitu gw integrasiin soalnya
+    # Bikin sendiri perihal fungsi buat databasenya, kaga gw integrasiin
+    # Tapi kan udah bisa terima data dari request yak, jadi cukup memenuhi spek
     server.config["database"] = "sqlite:///test.db"
 
 

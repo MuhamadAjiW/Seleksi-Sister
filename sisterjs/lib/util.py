@@ -1,3 +1,5 @@
+from json import loads
+
 HTML_ERROR_MESSAGES = {
     100: "Continue",
     101: "Switching Protocols",
@@ -49,3 +51,20 @@ HTML_ERROR_MESSAGES = {
     505: "HTTP Version Not Supported",
     511: "Network Authentication Required"
 }
+
+def extract_wwwquery(query:str):
+    query_dict = {}
+    query_cnt = query.split('&')
+    for query in query_cnt:
+        query_pair = query.split('=')
+        query_dict[query_pair[0]] = query_pair[1]
+    return query_dict
+
+def extract_plaintext(query:str):
+    query_dict = {}
+    query_dict["content"] = query
+    return query_dict
+
+def extract_json(query:str):
+    query_dict = loads(query)
+    return query_dict
