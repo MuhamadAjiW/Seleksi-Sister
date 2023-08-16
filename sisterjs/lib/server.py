@@ -1,7 +1,54 @@
+# Disclaimer dulu
+
+# kalo ini frameworknya rada aneh maap banget
+# Gw kaga ada pengalaman web samsek
+# Asal jalan doang kaga tau struktur
+# Maapin
+
+
 import socket
 import threading
 import os
 import json
+import sqlite3
+# Request Class
+class Request():
+    def __init__(self, reqstr:str=''):
+        # print("Received data:") # LOG
+        # print(reqstr) # LOG
+        
+        reqstr = reqstr
+        area = reqstr.split('\r\n\r\n')
+
+        infolines = area[0].split('\r\n')
+        print(infolines)
+
+        request_line = infolines[0].split(' ')
+        self.type = request_line[0]
+        
+        print("Request type: ", end=' ') # LOG
+        print(self.type) # LOG
+
+        addr = request_line[1]
+        addr_cnt = addr.split('?')
+
+        self.addr = addr_cnt[0]
+        self.query = None
+        self.contents = None
+
+
+        lastln = infolines[len(infolines) - 1].split(': ')
+        if(lastln[0] == "Content-Type"):
+            self.content_type = lastln[1]
+            print("Request has content: ", end=' ') # LOG
+            print(self.content_type)
+
+            self.contents = area[1]
+            print("Request contents: ") # LOG
+            print(self.contents) # LOG
+
+        if(len(addr_cnt) > 1):
+            self.query = extract_query(addr_cnt[1])
 
 # Response Class
 class Server_Response():
@@ -71,10 +118,10 @@ class Server():
         self.socket.listen(limit)
         self.running = False
         self.routes = {}
-        self.static_data = {}
+        self.config = {}
 
         @self.route('/favicon.ico')
-        def handle_favicon_route(**kwargs):
+        def handle_favicon_route(request):
             return Server_Response(content_type='image/webp', content=self.default_icon)
         
     def load_static_folder(self, folder_path:str):
@@ -126,11 +173,19 @@ class Server():
             raise Exception(f"Route name {route} contains spaces. Please remove them.")
 
         def decorator(func):
-            self.routes[route] = func
-            self.routes[route].methods = methods
+            if methods == None:
+                raise Exception("Methods cannot be None.")
 
-            def decorated_func(**kwargs):
-                return func(**kwargs)
+            if route not in self.routes:
+                self.routes[route] = {}
+            # print("Adding method for route: ", end=' ') # LOG
+            # print(route)
+            for method in methods:
+                # print(method) # LOG
+                self.routes[route][method] = func
+
+            def decorated_func(request: Request):
+                return func(request)
             return decorated_func
         
         return decorator
@@ -138,8 +193,8 @@ class Server():
     def error_page(self, error_code):
         def decorator(func):
             self.routes[error_code] = func
-            def decorated_func(**kwargs):
-                return func(**kwargs)
+            def decorated_func(request):
+                return func(request)
             return decorated_func
         return decorator
     
@@ -149,76 +204,62 @@ class Server():
             self.default_icon = f.read()
 
         @self.route('/favicon.ico')
-        def handle_favicon_route(**kwargs):
+        def handle_favicon_route(request):
             return Server_Response(content_type='image/webp', content=self.default_icon)
 
     def response(self, request_data):
         try:
-            print("Received data:") # LOG
-            print(request_data) # LOG
-            
-            lines = request_data.split('\r\n')
-            request_line_cnt = lines[0].split(' ')
-            request_type = request_line_cnt[0]
-            request_addr = request_line_cnt[1]
-            
-            print("Request type: ", end=' ') # LOG
-            print(request_type) # LOG
+            request = Request(request_data)
 
-            request_addr_cnt = request_addr.split('?')
-            request_addr_name = request_addr_cnt[0]
-            
-            route_func = self.routes.get(request_addr_name)
-            kwargs = None
+            route_funcs = self.routes.get(request.addr, {})
 
-            if(len(request_addr_cnt) > 1):
-                request_query = request_addr_cnt[1]
-                kwargs = extract_query(request_query)
+            if route_funcs == {}:
+                print("ERROR: NOT FOUND") # LOG
+                if(self.routes.get(404)):
+                    return self.routes.get(404)(request).generate(self.server_name, keep_connection=False)
                 
+                return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
+        
+
+            route_func = route_funcs.get(request.type)
 
             if route_func:
                 print("ROUTE FOUND") # LOG
-
-                if not (request_type in route_func.methods):
-                    print("ERROR: NOT ALLOWED") # LOG
-                    if(self.routes.get(405)):
-                        return self.routes.get(405)(query = kwargs).generate_response(self.server_name, keep_connection=False)
-                    return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
-
-                elif request_type == 'GET':
-                    response = route_func(query = kwargs)
-                    # print("Route function: ", end=' ') # LOG
-                    # print(response) # LOG
+                    
+                if request.type == 'GET':
+                    response = route_func(request)
                     if type(response) == str:
                         response = Server_Response(content=response)
 
                     return response.generate(self.server_name, keep_connection=False)
                 
                 #TODO: Implement other methods
-                elif request_type == 'PUT':
+                elif request.type == 'PUT':
                     raise Exception("PUT method is not implemented yet.")
                 
-                elif request_type == 'POST':
+                elif request.type == 'POST':
                     raise Exception("POST method is not implemented yet.")
 
-                elif request_type == 'DELETE':
+                elif request.type == 'DELETE':
                     raise Exception("DELETE method is not implemented yet.")
+                
+                else:
+                    raise Exception(f"{request.type} method is not implemented yet.")
             
             else:
-                print("ERROR: NOT FOUND") # LOG
-                if(self.routes.get(404)):
-                    return self.routes.get(404)(query = kwargs).generate_response(self.server_name, keep_connection=False)
-                
-                return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
-        
+                print("ERROR: NOT ALLOWED") # LOG
+                if(self.routes.get(405)):
+                    return self.routes.get(405)(request).generate(self.server_name, keep_connection=False)
+                return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
+
         except Exception as e:
             print("ERROR: INTERNAL ERROR") # LOG
             print(e.args)
             print(e.with_traceback) # LOG
             if(self.routes.get(500)):
-                return self.routes.get(500)(request = "kwargs").generate_response(self.server_name, keep_connection=False)
+                return self.routes.get(500)(request).generate(self.server_name, keep_connection=False)
             
-            return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate_response(self.server_name, keep_connection=False)
+            return Server_Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate(self.server_name, keep_connection=False)
         
 
 # Functions to generate responses
@@ -229,18 +270,15 @@ def html_response(html_page:str):
 
 def generate_static_response(server: Server, route_name:str, content_type:str='*/*', read_type='r'):
     @server.route('/' + route_name)
-    def handle_file_route(**kwargs):
+    def handle_file_route(request):
         with open(route_name, read_type) as f:
             content = f.read()
         return Server_Response(content_type=content_type, content=content)
     
-def generate_query(server: Server, route_name:str, content_type:str='application/json', content=''):
+def generate_data(server: Server, route_name:str, content_type:str='application/json', content=''):
     @server.route(route_name)
-    def handle_file_route(**kwargs):
+    def handle_file_route(request):
         return Server_Response(content_type=content_type, content=content)
-
-def kwargs_to_json(**kwargs):
-    return json.dumps(kwargs)
 
 def extract_query(query:str):
     query_dict = {}
@@ -250,35 +288,44 @@ def extract_query(query:str):
         query_dict[query_pair[0]] = query_pair[1]
     return query_dict
 
-# Main
+# Main, contoh penggunaan
 if __name__ == "__main__":
+    # Penggunaannya mirip flask
     server = Server()
     
-    @server.route('/')
-    def handle_home_route(**kwargs):
+    # Returnnya harus dalam bentuk Server_Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
+    @server.route('/', methods=["GET"])
+    def handle_home_route(request: Request):
         return html_response('home.html')
     
     @server.route('/home')
-    def handle_home_route(**kwargs):
+    def handle_home_route(request: Request):
         return html_response('home.html')
     
     @server.route('/info')
-    def handle_home_route(**kwargs):
-        generate_query(server, '/info/query', content_type='application/json', content=kwargs_to_json(**kwargs.get('query')))
+    def handle_home_route(request: Request):
+        # fungsi generate_data buat ngegenerate data yang bisa diakses di frontend, lebih dia nambahin route buat GET
+        # NOTE: belom tau ini ngerusak threading atau engga
+        generate_data(server, '/info/query', content_type='application/json', content=json.dumps(request.query))
         return html_response('info.html')
 
     @server.route('/content')
-    def handle_home_route(**kwargs):
+    def handle_home_route(request: Request):
         return html_response('content.html')
 
     @server.route('/about')
-    def handle_about_route(**kwargs):
+    def handle_about_route(request: Request):
         return "This is the about page."
     
-        
+    # Set icon
     server.set_icon('assets/favicon.webp')
+
+    # Folder bisa langsung diload semuanya buat method GET
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
+
+    # Set integrasi database
+    server.config["database"] = "sqlite:///test.db"
 
     server.run()

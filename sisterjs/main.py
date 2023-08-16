@@ -1,33 +1,49 @@
-from api.server import *
+from lib.server import *
 
+# Contoh penggunaan
 if __name__ == "__main__":
+    # Penggunaannya mirip flask
     server = Server()
     
-    @server.route('/')
-    def handle_home_route(**kwargs):
-        return html_response('home.html')
-    
-    @server.route('/home')
-    def handle_home_route(**kwargs):
-        return html_response('home.html')
-    
-    @server.route('/info')
-    def handle_home_route(**kwargs):
-        generate_query(server, '/info/query', content_type='application/json', content=kwargs_to_json(**kwargs.get('query')))
-        return html_response('info.html')
+    # Returnnya harus dalam bentuk Server_Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
+    @server.route('/', methods=["GET"])
+    def handle_home_route(request: Request):
+        with open('home.html', 'r') as f:
+            content = f.read()
+        return Server_Response(content_type='text/html', content=content)
 
-    @server.route('/content')
-    def handle_home_route(**kwargs):
-        return html_response('content.html')
-
-    @server.route('/about')
-    def handle_about_route(**kwargs):
+    @server.route('/about', methods=["GET"])
+    def handle_about_route(request: Request):
         return "This is the about page."
     
-        
+    @server.route('/content', methods=["GET"])
+    def handle_home_route(request: Request):
+        return html_response('content.html')
+    
+
+    # Kalo method di omit, defaultnya dia nambah method GET doang
+    @server.route('/home')
+    def handle_home_route(request: Request):
+        return html_response('home.html')
+    
+
+    @server.route('/info')
+    def handle_home_route(request: Request):
+        # fungsi generate_data buat ngegenerate data yang bisa diakses di frontend, nambahin route buat GET
+        # NOTE: belom tau ini ngerusak threading atau engga
+        generate_data(server, '/info/query', content_type='application/json', content=json.dumps(request.query))
+        return html_response('info.html')
+
+
+    # Set icon
     server.set_icon('assets/favicon.webp')
+
+    # Folder bisa langsung diload semuanya buat method GET
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
+
+    # Set integrasi database
+    server.config["database"] = "sqlite:///test.db"
 
     server.run()
