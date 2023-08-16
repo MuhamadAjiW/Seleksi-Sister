@@ -4,23 +4,23 @@ def main():
     url = 'http://localhost:10000/'
     data = {'name': 'John'}
 
-    # response = requests.get(url, data=data)
+    response = requests.get(url, data=data)
 
-    # print("Get response status code:", response.status_code)
-    # print("Response content:")
-    # print(response.text)
+    print("Get response status code:", response.status_code)
+    print("Response content:")
+    print(response.text)
 
-    # response = requests.post(url, data=data)
+    response = requests.post(url, data=data)
 
-    # print("Post response status code:", response.status_code)
-    # print("Response content:")
-    # print(response.text)
+    print("Post response status code:", response.status_code)
+    print("Response content:")
+    print(response.text)
 
-    # response = requests.put(url, data=data)
+    response = requests.put(url, data=data)
     
-    # print("Put response status code:", response.status_code)
-    # print("Response content:")
-    # print(response.text)
+    print("Put response status code:", response.status_code)
+    print("Response content:")
+    print(response.text)
 
     response = requests.delete(url, data=data)
 

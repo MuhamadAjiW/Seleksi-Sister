@@ -4,20 +4,13 @@ function toContent() {
 }
 
 // API related functions
-async function getQueryParam(name){
-    try{
-        const response = await fetch('/info/query');
-        const data = await response.json();
-        console.log(data);
-        console.log(data[name]);
-        return data[name];
-    } catch (error){
-        console.error("Error fetching JSON: ", error);
-    }
+function getQueryParam(name){
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
 }
 
-async function loadPersonDetails(){
-    let index = await getQueryParam('index');
+function loadPersonDetails(){
+    let index = getQueryParam('index');
     if(index != null){
 
         fetch('/data/people.json')

@@ -26,12 +26,8 @@ if __name__ == "__main__":
     def handle_home_route(request: Request):
         return html_response('home.html')
     
-
     @server.route('/info')
     def handle_home_route(request: Request):
-        # fungsi generate_data buat ngegenerate data yang bisa diakses di frontend, nambahin route buat GET
-        # NOTE: belom tau ini ngerusak threading atau engga
-        generate_data(server, '/info/query', content_type='application/json', content=json.dumps(request.query))
         return html_response('info.html')
 
 

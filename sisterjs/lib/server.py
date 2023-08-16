@@ -5,12 +5,12 @@
 # Asal jalan doang kaga tau struktur
 # Maapin
 
-
 import socket
 import threading
 import os
 import json
 import sqlite3
+
 # Request Class
 class Request():
     def __init__(self, reqstr:str=''):
@@ -21,7 +21,6 @@ class Request():
         area = reqstr.split('\r\n\r\n')
 
         infolines = area[0].split('\r\n')
-        print(infolines)
 
         request_line = infolines[0].split(' ')
         self.type = request_line[0]
@@ -35,7 +34,15 @@ class Request():
         self.addr = addr_cnt[0]
         self.query = None
         self.contents = None
+        self.acc_type = None
 
+
+        if(self.type == 'GET'):
+            for line in infolines:
+                if(line.find('Accept:') != -1):
+                    self.acc_type = line.split(': ')[1]
+                    print("Request accepts: ", end=' ') # LOG
+                    print(self.acc_type) # LOG
 
         lastln = infolines[len(infolines) - 1].split(': ')
         if(lastln[0] == "Content-Type"):
@@ -48,7 +55,7 @@ class Request():
             print(self.contents) # LOG
 
         if(len(addr_cnt) > 1):
-            self.query = extract_query(addr_cnt[1])
+            self.query = extract_wwwquery(addr_cnt[1])
 
 # Response Class
 class Server_Response():
@@ -103,7 +110,7 @@ class Server_Handler(threading.Thread):
             self.client_socket.send(response_data)
             self.client_socket.close()
 
-        print("Worker Thread Closed Successfully.") # LOG
+        print("Worker Thread Closed Successfully.\n\n") # LOG
     
 # Main Server Class
 class Server():
@@ -274,13 +281,8 @@ def generate_static_response(server: Server, route_name:str, content_type:str='*
         with open(route_name, read_type) as f:
             content = f.read()
         return Server_Response(content_type=content_type, content=content)
-    
-def generate_data(server: Server, route_name:str, content_type:str='application/json', content=''):
-    @server.route(route_name)
-    def handle_file_route(request):
-        return Server_Response(content_type=content_type, content=content)
 
-def extract_query(query:str):
+def extract_wwwquery(query:str):
     query_dict = {}
     query_cnt = query.split('&')
     for query in query_cnt:
@@ -290,10 +292,8 @@ def extract_query(query:str):
 
 # Main, contoh penggunaan
 if __name__ == "__main__":
-    # Penggunaannya mirip flask
     server = Server()
     
-    # Returnnya harus dalam bentuk Server_Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
     @server.route('/', methods=["GET"])
     def handle_home_route(request: Request):
         return html_response('home.html')
@@ -304,9 +304,6 @@ if __name__ == "__main__":
     
     @server.route('/info')
     def handle_home_route(request: Request):
-        # fungsi generate_data buat ngegenerate data yang bisa diakses di frontend, lebih dia nambahin route buat GET
-        # NOTE: belom tau ini ngerusak threading atau engga
-        generate_data(server, '/info/query', content_type='application/json', content=json.dumps(request.query))
         return html_response('info.html')
 
     @server.route('/content')
@@ -317,15 +314,12 @@ if __name__ == "__main__":
     def handle_about_route(request: Request):
         return "This is the about page."
     
-    # Set icon
     server.set_icon('assets/favicon.webp')
 
-    # Folder bisa langsung diload semuanya buat method GET
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
 
-    # Set integrasi database
     server.config["database"] = "sqlite:///test.db"
 
     server.run()
