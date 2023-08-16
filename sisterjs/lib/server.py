@@ -3,7 +3,7 @@
 # kalo ini frameworknya rada aneh maap banget
 # Gw kaga ada pengalaman web samsek
 # Asal jalan doang kaga tau struktur
-# Maapin
+# Enjoy
 
 import socket
 import threading
@@ -30,32 +30,40 @@ class Request():
         self.query: dict = {}
         self.contents: dict = {}
         self.acc_type: str = ''
+        self.content_length: int = 0
 
-        print("Request addr: ", self.addr) # LOG
-        print("Request type: ", self.type) # LOG
+        # print("Request addr: ", self.addr) # LOG
+        # print("Request type: ", self.type) # LOG
 
-        if(self.type == 'GET'):
-            for line in httplines:
-                if(line.find('Accept:') != -1):
-                    self.acc_type: str = line.split(': ')[1]
-                    print("Request accepts: ", end=' ') # LOG
-                    print(self.acc_type) # LOG
+        for line in httplines:
+            accloc = line.find('Accept:')
+            contentloc = line.find('Content-Type:')
+            lengthloc = line.find('Content-Length:')
 
-        lastln = httplines[len(httplines) - 1].split(': ')
-        if(lastln[0] == "Content-Type"):
-            self.content_type: str = lastln[1]
-            print("Request has content: ", end=' ') # LOG
-            print(self.content_type)
+            if(accloc != -1):
+                self.acc_type: str = line.split(': ')[1]
+                # print("Request accepts: ", end=' ') # LOG
+                # print(self.acc_type) # LOG
+            
+            if(contentloc != -1):
+                self.content_type: str = line.split(': ')[1]
+                # print("Request has content: ", end=' ') # LOG
+                # print(self.content_type)
+                # print("Content: ", area[1])
+                if(self.content_type == 'application/x-www-form-urlencoded'):
+                    self.contents = extract_wwwquery(area[1])
+                elif(self.content_type == 'text/plain'):
+                    self.contents = extract_plaintext(area[1])
+                elif(self.content_type == 'application/json'):
+                    self.contents = extract_json(area[1])
+                # print("Request contents: ") # LOG
+                # print(self.contents) # LOG
+            
+            if(lengthloc != -1):
+                self.content_length: int = int(line.split(': ')[1])
 
-            if(self.content_type == 'application/x-www-form-urlencoded'):
-                self.contents = extract_wwwquery(area[1])
-            elif(self.content_type == 'text/plain'):
-                self.contents = extract_plaintext(area[1])
-            elif(self.content_type == 'application/json'):
-                self.contents = extract_json(area[1])
-
-            print("Request contents: ") # LOG
-            print(self.contents) # LOG
+                # print("Request length: ") # LOG
+                # print(self.content_length) # LOG
 
         if(len(addr_cnt) > 1):
             self.query = extract_wwwquery(addr_cnt[1])
@@ -232,9 +240,9 @@ class Server():
             if route not in self.routes:
                 self.routes[route] = {}
             
-            print("Adding method for route: ", route) # LOG
+            # print("Adding method for route: ", route) # LOG
             for method in methods:
-                print(method) # LOG
+                # print(method) # LOG
                 self.routes[route][method] = func
 
             def decorated_func(request: Request, *args):
@@ -271,10 +279,10 @@ class Server():
             if route_funcs == {}:
 
                 # Possible var
-                print(self.routes_vars)
+                # print(self.routes_vars)
                 for var_info in self.routes_vars:
-                    print(var_info)
-                    print(request.addr)
+                    # print(var_info)
+                    # print(request.addr)
                     if request.addr.startswith(var_info):
                         route_funcs = self.routes.get(var_info, {})
                         uses_vars = True
@@ -294,7 +302,7 @@ class Server():
 
             # Vars detection
             if uses_vars:
-                print("ROUTE MIGHT USE VARS")
+                # print("ROUTE MIGHT USE VARS")
                 args = None
                 entry = None
                 entry_types = None
@@ -306,60 +314,60 @@ class Server():
                     success = False
                     varstring = var_comb[:-1]
                     entry_types = varstring.split(',')
-                    print(entry_types)
+                    # print(entry_types)
                     var_idxs = self.routes_vars[pref][var_comb]
 
-                    print(var_idxs)
+                    # print(var_idxs)
                     for entries in var_idxs:
-                        print("Examining: ", entries)
+                        # print("Examining: ", entries)
 
                         entrystr = entries[:-1]
                         entry = entrystr.split(',')
-                        print("entry: ", entry)
+                        # print("entry: ", entry)
 
                         for i in range(len(entry)):
                             entry[i] = int(entry[i])
 
-                        print("now entry: ", entry)
+                        # print("now entry: ", entry)
 
                         if(len(vals) < max(entry) + 1):
-                            print("Not enough entries")
+                            continue
                         else:
                             args = list(entry)
-                            print("entry for now:", entry)
+                            # print("entry for now:", entry)
                             for i in range(startidx, len(vals)):
-                                print("VALS: ", vals[i])
+                                # print("VALS: ", vals[i])
 
                                 if i in entry:
-                                    print("Examining value: ", vals[i])
+                                    # print("Examining value: ", vals[i])
                                     if entry_types[entry.index(i)] == 'int':
                                         try:
-                                            print("Should be int")
+                                            # print("Should be int")
                                             intval = int(vals[i])
                                             compstring += '/' + str(intval)
                                             args[entry.index(i)] = intval
-                                            print("passed")
+                                            # print("passed")
                                             success = True
                                         except:
                                             success = False
                                             break
                                     else:
-                                        print("Should be str")
+                                        # print("Should be str")
                                         compstring += '/' + vals[i]
                                         args[entry.index(i)] = vals[i]
-                                        print("passed")
+                                        # print("passed")
                                 else:
                                     compstring += '/' + vals[i]
                                 
-                                print(compstring)
+                                # print(compstring)
                                 if not request.addr.startswith(compstring):
                                     success = False
                                     break
 
-                            print("result for:", entry)
-                            print(compstring)
+                            # print("result for:", entry)
+                            # print(compstring)
                             if success and compstring == request.addr:
-                                print("SUCCESS WITH ENTRY: ", entry)
+                                # print("SUCCESS WITH ENTRY: ", entry)
                                 success = True
                                 break
 
@@ -368,22 +376,22 @@ class Server():
                 
                     if success:
                         newpath = ''
-                        print("entry: ", entry)
-                        print("entry_types: ", entry_types)
+                        # print("entry: ", entry)
+                        # print("entry_types: ", entry_types)
                         for i in range(1, len(vals)):
                             if i not in entry:
                                 newpath += '/' + vals[i]
                             else:
                                 newpath += f'/<{entry_types[entry.index(i)]}>'
-                            print(newpath)
+                            # print(newpath)
                         
-                        print("finalpath: ",newpath)
+                        # print("finalpath: ",newpath)
 
                         route_funcs = self.routes.get(newpath, {})
                         route_func = route_funcs.get(request.type)
 
                         if route_func:
-                            print("POSSIBLE ROUTE FOUND WITH VARS") # LOG
+                            # print("POSSIBLE ROUTE FOUND WITH VARS") # LOG
 
                             response = route_func(request, *args)
 
@@ -403,7 +411,7 @@ class Server():
 
             # Without vars
             elif route_func:
-                print("ROUTE FOUND") # LOG
+                # print("ROUTE FOUND") # LOG
                 response = route_func(request)
 
                 if type(response) == str:
@@ -451,76 +459,9 @@ def extract_wwwquery(query:str):
 
 def extract_plaintext(query:str):
     query_dict = {}
-    query["content"] = query
+    query_dict["content"] = query
     return query_dict
 
 def extract_json(query:str):
     query_dict = json.loads(query)
     return query_dict
-
-# Main, contoh penggunaan
-if __name__ == "__main__":
-    server = Server()
-    
-    @server.route('/', methods=["GET"])
-    def handle_home_route(request: Request, *args):
-        return html_response('home.html')
-    
-    @server.route('/home')
-    def handle_home_route(request: Request, *args):
-        return html_response('home.html')
-    
-    @server.route('/info')
-    def handle_home_route(request: Request, *args):
-        return html_response('info.html')
-
-    @server.route('/content')
-    def handle_home_route(request: Request, *args):
-        return html_response('content.html')
-
-    @server.route('/about')
-    def handle_about_route(request: Request, *args):
-        return "This is the about page."
-
-    server.set_icon('assets/favicon.webp')
-
-    server.load_static_folder('data')
-    server.load_static_folder('scripts')
-    server.load_static_folder('assets')
-
-    server.config["database"] = "sqlite:///test.db"
-
-    @server.route('/api/dummydata', methods=["POST"])
-    def handle_home_route(request: Request, *args):
-        return html_response('home.html')
-    
-    @server.route('/api/dummydata', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        return "Put response with no args"
-    
-    @server.route('/api/dummydata/<int>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        return "Put response with one int"
-    
-    @server.route('/api/dummydata/<str>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        return "Put response with one string"
-    
-    @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        return "Put response with two ints"
-    
-    @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        return "Put response with an int and a str, uhh in between"
-    
-    
-    @server.route('/api/dummydata', methods=["DELETE"])
-    def handle_home_route(request: Request, *args):
-        return html_response('home.html')
-
-    server.run()

@@ -2,9 +2,10 @@ from lib.server import *
 
 # Contoh penggunaan
 if __name__ == "__main__":
-    # Penggunaannya mirip flask
+    # Inti penggunaannya mirip flask
     server = Server()
     
+
     # Returnnya harus dalam bentuk Server_Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
     @server.route('/', methods=["GET"])
     def handle_home_route(request: Request):
@@ -39,33 +40,50 @@ if __name__ == "__main__":
     
     @server.route('/api/dummydata/<int>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
         return "Put response with one int"
     
     @server.route('/api/dummydata/<str>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
         return "Put response with one string"
     
     @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
         return "Put response with two ints"
     
+
+    # Semua konten yang dikirim selalu diconvert ke bentuk dictionary
+    # NOTE: Yang bisa diterima: Application/json, application/x-www-form-urlencoded, text/plain
     @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
+        print("DATA: ", request.contents)
+        print("QUERY: ", request.query)
         return "Put response with an int and a str, uhh in between"
+    
+
+    # Method bisa dipisah fungsi atau disatuin dan dihandle dari request, terserah gimana yang make frameworknya aja
+    @server.route('/api/dummydata/<int>/uhh/<str>', methods=["POST", "DELETE"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        print("DATA: ", request.contents)
+        print("QUERY: ", request.query)
+        return "Post or delete response with an int and a str, uhh in between"
+
 
     # Set icon
     server.set_icon('assets/favicon.webp')
+
 
     # Folder bisa langsung diload semuanya buat method GET
     server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
 
+
     # Set integrasi database
+    # Bikin sendiri perihal fungsi buat databasenya, kaga begitu gw integrasiin soalnya
     server.config["database"] = "sqlite:///test.db"
 
+
+    # Gas
     server.run()
