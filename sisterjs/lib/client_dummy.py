@@ -1,7 +1,7 @@
 import requests
 
 def main():
-    url = 'http://localhost:10000/api/dummydata/100/200'
+    url = 'http://localhost:10000/api/dummydata/100/uhh/200'
     data = {'name': 'John'}
 
     # response = requests.get(url, data=data)

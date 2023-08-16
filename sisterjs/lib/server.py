@@ -327,10 +327,10 @@ class Server():
                             print("Not enough entries")
                         else:
                             args = list(entry)
+                            print("entry for now:", entry)
                             for i in range(startidx, len(vals)):
                                 print("VALS: ", vals[i])
 
-                                print("entry for now:", entry)
                                 if i in entry:
                                     print("Examining value: ", vals[i])
                                     if entry_types[entry.index(i)] == 'int':
@@ -338,7 +338,7 @@ class Server():
                                             print("Should be int")
                                             intval = int(vals[i])
                                             compstring += '/' + str(intval)
-                                            args[args.index(i)] = intval
+                                            args[entry.index(i)] = intval
                                             print("passed")
                                             success = True
                                         except:
@@ -366,36 +366,41 @@ class Server():
 
                             if not success:
                                 compstring = pref
-
-                    print("Success: ", success)
-                    if success:
-                        break                        
                 
-                if success:
-                    newpath = ''
-                    print("entry: ", entry)
-                    print("entry_types: ", entry_types)
-                    for i in range(1, len(vals)):
-                        if i not in entry:
-                            newpath += '/' + vals[i]
-                        else:
-                            newpath += f'/<{entry_types[entry.index(i)]}>'
-                        print(newpath)
+                    if success:
+                        newpath = ''
+                        print("entry: ", entry)
+                        print("entry_types: ", entry_types)
+                        for i in range(1, len(vals)):
+                            if i not in entry:
+                                newpath += '/' + vals[i]
+                            else:
+                                newpath += f'/<{entry_types[entry.index(i)]}>'
+                            print(newpath)
+                        
+                        print("finalpath: ",newpath)
+
+                        route_funcs = self.routes.get(newpath, {})
+                        route_func = route_funcs.get(request.type)
+
+                        if route_func:
+                            print("POSSIBLE ROUTE FOUND WITH VARS") # LOG
+
+                            response = route_func(request, *args)
+
+                            if type(response) == str:
+                                response = Server_Response(content=response)
+
+                            return response.generate(self.server_name, keep_connection=False)
+
+                    compstring = pref
                     
-                    print("finalpath: ",newpath)
+                print("ERROR: NOT FOUND") # LOG
+                if(self.routes.get(404)):
+                    return self.routes.get(404)(request).generate(self.server_name, keep_connection=False)
+                
+                return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
 
-                    route_funcs = self.routes.get(newpath, {})
-                    route_func = route_funcs.get(request.type)
-
-                    if route_func:
-                        print("ROUTE FOUND WITH VARS") # LOG
-
-                        response = route_func(request, *args)
-
-                        if type(response) == str:
-                            response = Server_Response(content=response)
-
-                        return response.generate(self.server_name, keep_connection=False)
 
             # Without vars
             elif route_func:
@@ -492,30 +497,26 @@ if __name__ == "__main__":
     
     @server.route('/api/dummydata', methods=["PUT"])
     def handle_home_route(request: Request, *args):
-        print("Put response, unwanted")
-        return html_response('home.html')
-    
-    @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        return html_response('home.html')
-    
-    @server.route('/api/dummydata/<int>/uhh/<int>', methods=["PUT"])
-    def handle_home_route(request: Request, *args):
-        print("ARGS: ", args)
-        print(args[0])
-        print(args[1])
-        return html_response('home.html')
+        return "Put response with no args"
     
     @server.route('/api/dummydata/<int>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
-        print(args[0])
-        return html_response('home.html')
+        return "Put response with one args"
+    
+    @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with two args"
+    
+    @server.route('/api/dummydata/<int>/uhh/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with two args and uhh in between"
+    
     
     @server.route('/api/dummydata', methods=["DELETE"])
     def handle_home_route(request: Request, *args):
         return html_response('home.html')
 
-    # print(server.routes_vars["/api/dummydata"])
     server.run()
