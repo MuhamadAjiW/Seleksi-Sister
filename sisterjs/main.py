@@ -56,6 +56,7 @@ if __name__ == "__main__":
     @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
+        print("ACCEPT: ", request.acc_type)
         print("DATA: ", request.contents)
         print("QUERY: ", request.query)
         return "Put response with an int and a str, uhh in between"
@@ -65,6 +66,7 @@ if __name__ == "__main__":
     @server.route('/api/dummydata/<int>/uhh/<str>', methods=["POST", "DELETE"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
+        print("ACCEPT: ", request.acc_type)
         print("DATA: ", request.contents)
         print("QUERY: ", request.query)
         return "Post or delete response with an int and a str, uhh in between"
