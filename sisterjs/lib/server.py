@@ -9,7 +9,9 @@ import socket
 import threading
 import os
 import json
+import re
 import sqlite3
+from constants import *
 
 # Request Class
 class Request():
@@ -19,38 +21,40 @@ class Request():
         
         reqstr = reqstr
         area = reqstr.split('\r\n\r\n')
-
-        infolines = area[0].split('\r\n')
-
-        request_line = infolines[0].split(' ')
-        self.type = request_line[0]
-        
-        print("Request type: ", end=' ') # LOG
-        print(self.type) # LOG
-
+        httplines = area[0].split('\r\n')
+        request_line = httplines[0].split(' ')
         addr = request_line[1]
         addr_cnt = addr.split('?')
 
-        self.addr = addr_cnt[0]
-        self.query = None
-        self.contents = None
-        self.acc_type = None
+        self.type: str = request_line[0]
+        self.addr: str = addr_cnt[0]
+        self.query: dict = {}
+        self.contents: dict = {}
+        self.acc_type: str = ''
 
+        print("Request addr: ", self.addr) # LOG
+        print("Request type: ", self.type) # LOG
 
         if(self.type == 'GET'):
-            for line in infolines:
+            for line in httplines:
                 if(line.find('Accept:') != -1):
-                    self.acc_type = line.split(': ')[1]
+                    self.acc_type: str = line.split(': ')[1]
                     print("Request accepts: ", end=' ') # LOG
                     print(self.acc_type) # LOG
 
-        lastln = infolines[len(infolines) - 1].split(': ')
+        lastln = httplines[len(httplines) - 1].split(': ')
         if(lastln[0] == "Content-Type"):
-            self.content_type = lastln[1]
+            self.content_type: str = lastln[1]
             print("Request has content: ", end=' ') # LOG
             print(self.content_type)
 
-            self.contents = area[1]
+            if(self.content_type == 'application/x-www-form-urlencoded'):
+                self.contents = extract_wwwquery(area[1])
+            elif(self.content_type == 'text/plain'):
+                self.contents = extract_plaintext(area[1])
+            elif(self.content_type == 'application/json'):
+                self.contents = extract_json(area[1])
+
             print("Request contents: ") # LOG
             print(self.contents) # LOG
 
@@ -76,7 +80,7 @@ class Server_Response():
             connection = 'Keep-Alive'
         
         response = (
-f"HTTP/1.1 {self.status_code}\r\n"
+f"HTTP/1.1 {self.status_code} {HTML_ERROR_MESSAGES[self.status_code]}\r\n"
 f"Server: {server_name}\r\n"
 f"Content-Length: {len(self.content)}\r\n"
 f"Content-Type: {self.content_type}\r\n"
@@ -115,7 +119,6 @@ class Server_Handler(threading.Thread):
 # Main Server Class
 class Server():
     def __init__(self, port:int=10000, addr:str='127.0.0.1', limit:int=5):
-        self.static_counter = 1
         self.default_icon = ''.encode('utf-8')
         self.server_name = "pyster/0.1.0"
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -125,6 +128,7 @@ class Server():
         self.socket.listen(limit)
         self.running = False
         self.routes = {}
+        self.routes_vars = {}
         self.config = {}
 
         @self.route('/favicon.ico')
@@ -161,8 +165,6 @@ class Server():
                 else:
                     raise Exception(f"File type {file_type} in static folder is not supported.")
                 
-                self.static_counter += 1
-
     def run(self):
         print(f"Server running on {self.addr}:{self.port}")
         self.running = True
@@ -176,23 +178,71 @@ class Server():
         self.socket.close()
     
     def route(self, route, methods:list=['GET']):
-        if(route.find(' ') != -1):
-            raise Exception(f"Route name {route} contains spaces. Please remove them.")
-
         def decorator(func):
+            baseroute = route
             if methods == None:
                 raise Exception("Methods cannot be None.")
+            
+            pattern = r'([^<]*)<([^<]+)>'
+            vars = re.findall(pattern, route)
+            if len(vars) > 0:
+                baseroute = vars[0][0][:-1]
 
-            if route not in self.routes:
+                # print("Route contains parameters.") # LOG                
+                # print(vars)
+                # print(baseroute)
+                var_comb = ''
+                for match in vars:
+                    prefix, var_type = match
+
+                    if var_type not in ['str', 'int']:
+                        raise Exception(f"var type {var_type} is not a supported type. Please use str or int.")
+                    if prefix.find(' ') != -1:
+                        raise Exception(f"Route part {prefix} contains spaces. Please remove them.")
+
+                    var_comb += var_type + ','
+                    # print("Prefix:", prefix)
+                    # print("Variable Name:", var_name)
+
+                if baseroute not in self.routes_vars:
+                    self.routes_vars[baseroute] = {}
+                
+                # print(var_comb)
+                var_info = vars
+                var_dict = {}
+                loc = 0
+                for vars in var_info:
+                    loc += vars[0].count('/')
+                    var_dict[loc] = vars[1]
+                # print(var_info)
+                # print(var_dict)
+
+                if var_comb not in self.routes_vars[baseroute]:
+                    self.routes_vars[baseroute][var_comb] = {}
+
+                strcomb = ''
+                for var in var_dict.keys():
+                    strcomb += str(var) + ','
+                # print(strcomb)
+
+                self.routes_vars[baseroute][var_comb][strcomb] = var_dict
+                # print(baseroute)
+
+
+            elif(baseroute.find(' ') != -1):
+                raise Exception(f"Route name {baseroute} contains spaces. Please remove them.")
+
+            if baseroute not in self.routes:
                 self.routes[route] = {}
-            # print("Adding method for route: ", end=' ') # LOG
-            # print(route)
+            
+            # print("Adding method for route: ", route) # LOG
             for method in methods:
                 # print(method) # LOG
-                self.routes[route][method] = func
+                # print(baseroute)
+                self.routes[baseroute][method] = func
 
-            def decorated_func(request: Request):
-                return func(request)
+            def decorated_func(request: Request, *args):
+                return func(request, *args)
             return decorated_func
         
         return decorator
@@ -200,8 +250,8 @@ class Server():
     def error_page(self, error_code):
         def decorator(func):
             self.routes[error_code] = func
-            def decorated_func(request):
-                return func(request)
+            def decorated_func(request, *args):
+                return func(request, *args)
             return decorated_func
         return decorator
     
@@ -217,47 +267,121 @@ class Server():
     def response(self, request_data):
         try:
             request = Request(request_data)
+            uses_vars = False
+            pref = ''
 
             route_funcs = self.routes.get(request.addr, {})
 
             if route_funcs == {}:
-                print("ERROR: NOT FOUND") # LOG
-                if(self.routes.get(404)):
-                    return self.routes.get(404)(request).generate(self.server_name, keep_connection=False)
+
+                # With vars
+                print(self.routes_vars)
+                for var_info in self.routes_vars:
+                    print(var_info)
+                    print(request.addr)
+                    if request.addr.startswith(var_info):
+                        route_funcs = self.routes.get(var_info, {})
+                        uses_vars = True
+                        pref = var_info
+                        break
                 
-                return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
+                if not uses_vars:
+                    print("ERROR: NOT FOUND") # LOG
+                    if(self.routes.get(404)):
+                        return self.routes.get(404)(request).generate(self.server_name, keep_connection=False)
+                    
+                    return Server_Response(status_code=404, content_type='text/plain', content='404 Not Found').generate(self.server_name, keep_connection=False)
         
+
 
             route_func = route_funcs.get(request.type)
 
             if route_func:
                 print("ROUTE FOUND") # LOG
+
+                if uses_vars:
+                    print("ROUTE USES VARS")
+                    indices = None
+                    vals = request.addr.split('/')
+                    compstring = pref
+                    startidx = compstring.count('/') + 1
+                    for var_comb in self.routes_vars[pref]:
+
+                        success = True
+                        varstring = var_comb[:-1]
+                        var_types = varstring.split(',')
+                        print(var_types)
+                        var_idxs = self.routes_vars[pref][var_comb]
+
+                        for entries in var_idxs:
+                            entrystr = entries[:-1]
+                            entry = entrystr.split(',')
+                            indices = entry
+                            success = True
+
+                            for i in range(len(entry)):
+                                entry[i] = int(entry[i])
+
+                            print(compstring)
+                            for i in range(startidx, len(vals)):
+                                print("VALS: ", vals[i])
+
+                                if i in entry:
+                                    print("Examining: ", vals[i])
+                                    if var_types[entry.index(i)] == 'int':
+                                        try:
+                                            print("Should be int")
+                                            intval = int(vals[i])
+                                            compstring += '/' + str(intval)
+                                            indices[indices.index(i)] = intval
+                                            print("passed")
+                                        except:
+                                            success = False
+                                            break
+                                    else:
+                                        print("Should be str")
+                                        compstring += '/' + vals[i]
+                                        indices[indices.index(i)] = intval
+                                        print("passed")
+                                else:
+                                    compstring += '/' + vals[i]
+                                
+                                print(compstring)
+                                if not request.addr.startswith(compstring):
+                                    success = False
+                                    break
+
+                            print("result for:", entry)
+                            print(compstring)
+                            if compstring == request.addr:
+                                print("SUCCESS WITH ENTRY: ", entry)
+
+                                success = True
+                                break
+
+
+                            if not success:
+                                compstring = pref
+
+                        if success:
+                            break                        
                     
-                if request.type == 'GET':
-                    response = route_func(request)
-                    if type(response) == str:
-                        response = Server_Response(content=response)
-
-                    return response.generate(self.server_name, keep_connection=False)
-                
-                #TODO: Implement other methods
-                elif request.type == 'PUT':
-                    raise Exception("PUT method is not implemented yet.")
-                
-                elif request.type == 'POST':
-                    raise Exception("POST method is not implemented yet.")
-
-                elif request.type == 'DELETE':
-                    raise Exception("DELETE method is not implemented yet.")
-                
+                    if success:
+                        print(indices)
+                        response = route_func(request, *indices)
                 else:
-                    raise Exception(f"{request.type} method is not implemented yet.")
-            
-            else:
-                print("ERROR: NOT ALLOWED") # LOG
-                if(self.routes.get(405)):
-                    return self.routes.get(405)(request).generate(self.server_name, keep_connection=False)
-                return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
+                    response = route_func(request)
+
+                if type(response) == str:
+                    response = Server_Response(content=response)
+
+                return response.generate(self.server_name, keep_connection=False)
+
+            # Not Found or not allowed found
+            print("ERROR: NOT ALLOWED") # LOG
+            if(self.routes.get(405)):
+                return self.routes.get(405)(request).generate(self.server_name, keep_connection=False)
+            return Server_Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
 
         except Exception as e:
             print("ERROR: INTERNAL ERROR") # LOG
@@ -290,30 +414,39 @@ def extract_wwwquery(query:str):
         query_dict[query_pair[0]] = query_pair[1]
     return query_dict
 
+def extract_plaintext(query:str):
+    query_dict = {}
+    query["content"] = query
+    return query_dict
+
+def extract_json(query:str):
+    query_dict = json.loads(query)
+    return query_dict
+
 # Main, contoh penggunaan
 if __name__ == "__main__":
     server = Server()
     
     @server.route('/', methods=["GET"])
-    def handle_home_route(request: Request):
+    def handle_home_route(request: Request, *args):
         return html_response('home.html')
     
     @server.route('/home')
-    def handle_home_route(request: Request):
+    def handle_home_route(request: Request, *args):
         return html_response('home.html')
     
     @server.route('/info')
-    def handle_home_route(request: Request):
+    def handle_home_route(request: Request, *args):
         return html_response('info.html')
 
     @server.route('/content')
-    def handle_home_route(request: Request):
+    def handle_home_route(request: Request, *args):
         return html_response('content.html')
 
     @server.route('/about')
-    def handle_about_route(request: Request):
+    def handle_about_route(request: Request, *args):
         return "This is the about page."
-    
+
     server.set_icon('assets/favicon.webp')
 
     server.load_static_folder('data')
@@ -322,4 +455,30 @@ if __name__ == "__main__":
 
     server.config["database"] = "sqlite:///test.db"
 
+    @server.route('/api/dummydata', methods=["POST"])
+    def handle_home_route(request: Request, *args):
+        return html_response('home.html')
+    
+    @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return html_response('home.html')
+    
+    @server.route('/api/dummydata/<int>/uhh/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return html_response('home.html')
+    
+    @server.route('/api/dummydata/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        print(args[0])
+        print(args[1])
+        return html_response('home.html')
+    
+    @server.route('/api/dummydata', methods=["DELETE"])
+    def handle_home_route(request: Request, *args):
+        return html_response('home.html')
+
+    # print(server.routes_vars["/api/dummydata"])
     server.run()
