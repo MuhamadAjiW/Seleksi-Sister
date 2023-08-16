@@ -1,4 +1,12 @@
 from lib.server import *
+from lib.response import *
+
+# Disclaimer dulu
+
+# Kalo ini frameworknya rada aneh maap banget
+# Gw kaga ada pengalaman web samsek
+# Asal jalan doang, kaga tau struktur
+# Enjoy kode tai gw
 
 # Contoh penggunaan
 if __name__ == "__main__":

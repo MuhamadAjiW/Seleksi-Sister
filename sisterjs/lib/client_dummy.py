@@ -1,6 +1,6 @@
 import requests
 
-def main():
+def test():
     url = 'http://localhost:10000/api/dummydata/100/uhh/nopls?Kobokan=Aeru&Merdeka=1945'
 
     # Kalo mau testing GET cus aja buka http://localhost:10000 di browser
@@ -58,4 +58,4 @@ def main():
     print(response.text)
 
 if __name__ == "__main__":
-    main()
+    test()
