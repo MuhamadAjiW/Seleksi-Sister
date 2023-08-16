@@ -31,6 +31,32 @@ if __name__ == "__main__":
         return html_response('info.html')
 
 
+    # Fitur Tambahan: args! bisa ngejadiin route sebagai argumen int atau str
+    # NOTE: Kurang di debug. Ga optimizednya minta ampun
+    @server.route('/api/dummydata', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        return "Put response with no args"
+    
+    @server.route('/api/dummydata/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with one int"
+    
+    @server.route('/api/dummydata/<str>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with one string"
+    
+    @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with two ints"
+    
+    @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with an int and a str, uhh in between"
+
     # Set icon
     server.set_icon('assets/favicon.webp')
 

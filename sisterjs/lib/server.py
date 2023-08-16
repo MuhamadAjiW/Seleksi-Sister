@@ -10,8 +10,7 @@ import threading
 import os
 import json
 import re
-import sqlite3
-from constants import *
+from lib.constants import *
 
 # Request Class
 class Request():
@@ -347,7 +346,7 @@ class Server():
                                     else:
                                         print("Should be str")
                                         compstring += '/' + vals[i]
-                                        args[args.index(i)] = intval
+                                        args[entry.index(i)] = vals[i]
                                         print("passed")
                                 else:
                                     compstring += '/' + vals[i]
@@ -502,17 +501,22 @@ if __name__ == "__main__":
     @server.route('/api/dummydata/<int>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
-        return "Put response with one args"
+        return "Put response with one int"
+    
+    @server.route('/api/dummydata/<str>', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        print("ARGS: ", args)
+        return "Put response with one string"
     
     @server.route('/api/dummydata/<int>/<int>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
-        return "Put response with two args"
+        return "Put response with two ints"
     
-    @server.route('/api/dummydata/<int>/uhh/<int>', methods=["PUT"])
+    @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
-        return "Put response with two args and uhh in between"
+        return "Put response with an int and a str, uhh in between"
     
     
     @server.route('/api/dummydata', methods=["DELETE"])
