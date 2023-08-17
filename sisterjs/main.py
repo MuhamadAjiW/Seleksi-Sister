@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
 
     # Fitur Tambahan: 
-    # args! bisa ngejadiin route sebagai argumen int atau str
-    # NOTE: Kurang di debug. Ga optimizednya minta ampun
+    # args! bisa ngejadiin route sebagai argumen int atau str (str gak boleh make '/' atau ' ')
+    # NOTE: Kurang di debug. Ga optimizednya minta ampun, kemungkinan besar banget masi bikin bug
     @server.route('/api/dummydata', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         return "Put response with no args"
@@ -107,6 +107,9 @@ if __name__ == "__main__":
     # Tapi kan udah bisa terima data dari request yak, jadi cukup memenuhi spek harusnya
     server.config["database"]: str = "data/dummy.db"
     connection = connect_db(server.config["database"])
+
+
+    # Oke ini buat API web dummynya
     init_db(connection)
     close_db(connection)
 

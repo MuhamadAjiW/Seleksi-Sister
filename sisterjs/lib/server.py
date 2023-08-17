@@ -216,8 +216,12 @@ class Server():
                                             success = False
                                             break
                                     else:
-                                        compstring += '/' + vals[i]
-                                        args[entry.index(i)] = vals[i]
+                                        if vals[i].find(' ') != -1:
+                                            success = False
+                                            break
+                                        else:
+                                            compstring += '/' + vals[i]
+                                            args[entry.index(i)] = vals[i]
                                 else:
                                     compstring += '/' + vals[i]
                                 
