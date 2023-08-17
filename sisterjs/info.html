@@ -5,7 +5,15 @@
 <h1>Person Info</h1>
 <div id="person-deets"></div>
 
-<button id="contentbt">Kembali</button>
+<form id="editform" style="display: none;">
+    <textarea id="enameinput" placeholder="New Name" rows="1" cols="50"></textarea><br>
+    <textarea id="edescinput" placeholder="New Description" rows="1" cols="50"></textarea><br>
+    <button id="confirmbt">confirm</button>
+</form>
+
+<br>
+<button id="editbt">Edit</button>
+<button id="contentbt">Back</button>
 
 <script src="/scripts/info.js"></script>
 

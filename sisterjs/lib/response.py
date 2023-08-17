@@ -1,4 +1,4 @@
-from lib.util import HTML_ERROR_MESSAGES
+from lib.util import HTML_ERROR_MESSAGES, create_json
 
 # Response Class
 class Response():
@@ -34,7 +34,11 @@ f"Connection: {connection}\r\n\r\n"
 
         return response
     
-def html_response(html_page:str):
+def html_response(html_page:str, status_code:int=200):
     with open(html_page, 'r') as f:
         content = f.read()
-    return Response(content_type='text/html', content=content)
+    return Response(status_code, content_type='text/html', content=content)
+
+def json_response(json:str, status_code:int=200):
+    content = create_json(json)
+    return Response(status_code, content_type='application/json', content=content)

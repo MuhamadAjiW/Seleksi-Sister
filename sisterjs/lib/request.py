@@ -37,5 +37,5 @@ class Request():
             if(lengthloc != -1):
                 self.content_length: int = int(line.split(': ')[1])
 
-        if(len(addr_cnt) > 1):
+        if(len(addr_cnt) > 1 and addr_cnt[1] != ''):
             self.query = extract_wwwquery(addr_cnt[1])

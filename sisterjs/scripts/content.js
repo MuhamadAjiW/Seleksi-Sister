@@ -1,39 +1,30 @@
 // Display related functions
 function showadd() {
     var addform = document.getElementById("addform");
-    var delform = document.getElementById("delform");
 
-    if(addform.style.display = "none"){
+    if(addform.style.display == "none"){
         addform.style.display = "block";
-        delform.style.display = "none";
     }
-}
-function showdel() {
-    var addform = document.getElementById("addform");
-    var delform = document.getElementById("delform");
-
-    if(delform.style.display = "none"){
+    else{
         addform.style.display = "none";
-        delform.style.display = "block";
     }
-}
-function hide() {
-    var addform = document.getElementById("addform");
-    var delform = document.getElementById("delform");
-    addform.style.display = "none";
-    delform.style.display = "none";
 }
 function toHome() {
     window.location.href = "home";
 }
 
-function toPersonPage(index){
+function toPage(index){
     window.location.href = "info?index=" + index;
 }
 
 function loadContentList() {
-    fetch('/data/people.json')
-        .then(response => response.json())
+    fetch('/api/infoall')
+        .then(response => {
+            if(!response.ok){
+                throw new Error('HTTP error! Status: ${response.status}');
+            }
+            return response.json();
+        })
         .then(data => {
             const peopleList = document.getElementById('people-list');
 
@@ -46,10 +37,15 @@ function loadContentList() {
 
                 const viewButton = document.createElement('button');
                 viewButton.innerText = 'View Details';
-                viewButton.addEventListener('click', () => toPersonPage(index));
+                viewButton.addEventListener('click', () => toPage(index));
+
+                const delButton = document.createElement('button');
+                delButton.innerText = 'Delete';
+                delButton.addEventListener('click', () => del(index));
 
                 personElement.appendChild(spacing);
                 personElement.appendChild(viewButton);
+                personElement.appendChild(delButton);
 
                 peopleList.appendChild(personElement);
             });
@@ -58,51 +54,55 @@ function loadContentList() {
 
 
 // API related functions
-function add(){
+async function add(){
     const niName = document.getElementById("anameinput").value;
     const niDesc = document.getElementById("adescinput").value;
 
     const reqData = {
         name: niName,
-        description: niDesc
+        desc: niDesc
     }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/add", true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            console.log(xhr.responseText);
+    try{
+        const response = await fetch(`/api/info`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(reqData)
+        });
+        if(response.ok){
+            console.log("Add request successful")
         }
-    };
-    xhr.send(JSON.stringify(reqData));
-}
-function del() {
-    const niName = document.getElementById("dnameinput").value;
-
-    const reqData = {
-        name: niName,
+        else{
+            console.log("Add request failed")
+        }
+        window.location.href = "content";
     }
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/add", true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            console.log(xhr.responseText);
-        }
-    };
-    xhr.send(JSON.stringify(reqData));
+    catch(error){
+        console.error('Error sending add request: ', error);
+    }
 }
-function info(){
-    window.location.href = "home";
+
+function del(index){
+    fetch(`/api/info?index=${index}`, {
+        method: 'DELETE',
+    })
+    .then(response => {
+        if (response.ok){
+            console.log("Delete request successful")
+        }
+        else{
+            console.log("Delete request failed")
+        }
+        window.location.href = "content";
+    })
+    .catch(error => console.error('Error sending delete request: ', error));
 }
 
 // Button Logics
 document.getElementById("addbt").addEventListener("click", add);
-document.getElementById("delbt").addEventListener("click", del);
 document.getElementById("showaddbt").addEventListener("click", showadd);
-document.getElementById("showdelbt").addEventListener("click", showdel);
-document.getElementById("hidebt").addEventListener("click", hide);
 document.getElementById("homebt").addEventListener("click", toHome);
 
 // Initializations

@@ -148,7 +148,7 @@ class Server():
         return decorator
 
     def response(self, request_data):
-        try:
+        # try:
             request = Request(request_data)
             uses_vars = False
             pref = ''
@@ -276,14 +276,14 @@ class Server():
             return Response(status_code=405, content_type='text/plain', content='405 Method Not Allowed').generate(self.server_name, keep_connection=False)
 
         # General failure
-        except Exception as e:
-            print("ERROR: INTERNAL ERROR") # LOG
-            print(e.args)
-            print(e.with_traceback) # LOG
-            if(self.routes.get(500)):
-                return self.routes.get(500)(request).generate(self.server_name, keep_connection=False)
+        # except Exception as e:
+        #     print("ERROR: INTERNAL ERROR") # LOG
+        #     print(e.args)
+        #     print(e.with_traceback) # LOG
+        #     if(self.routes.get(500)):
+        #         return self.routes.get(500)(request).generate(self.server_name, keep_connection=False)
             
-            return Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate(self.server_name, keep_connection=False)
+        #     return Response(status_code=500, content_type='text/plain', content='500 Internal Error').generate(self.server_name, keep_connection=False)
         
     # Tertiary functionality
     def error_page(self, error_code):

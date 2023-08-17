@@ -1,6 +1,7 @@
 */.vs/
 */.vscode/
 */__pycache__/
+*/tempCodeRunnerFile.py
 restoregrub/problemset
 *.iso
 

@@ -1,5 +1,7 @@
 from lib.server import *
 from lib.response import *
+from lib.database import *
+import sqlite3
 
 # Disclaimer dulu
 
@@ -11,7 +13,7 @@ from lib.response import *
 # Contoh penggunaan
 if __name__ == "__main__":
     # Inti penggunaannya mirip flask
-    server = Server()
+    server = Server(10000)
     
 
     # Returnnya harus dalam bentuk Response, cuman string sama html aja yang dikhususin bisa dihandle tanpa bentuk Server_Response
@@ -96,16 +98,120 @@ if __name__ == "__main__":
 
 
     # Folder bisa langsung diload semuanya dan rekursif ke dalem buat method GET
-    server.load_static_folder('data')
     server.load_static_folder('scripts')
     server.load_static_folder('assets')
 
 
     # Set integrasi database
     # Bikin sendiri perihal fungsi buat databasenya, kaga gw integrasiin
-    # Tapi kan udah bisa terima data dari request yak, jadi cukup memenuhi spek
-    server.config["database"] = "sqlite:///test.db"
+    # Tapi kan udah bisa terima data dari request yak, jadi cukup memenuhi spek harusnya
+    server.config["database"]: str = "data/dummy.db"
+    connection = connect_db(server.config["database"])
+    init_db(connection)
+    close_db(connection)
+
+    @server.route('/api/info', methods=["GET"])
+    def handle_home_route(request: Request, *args):
+        index = int(request.query.get('index'))
+        if index is not None:
+            try:
+                index = int(index)
+                conn = connect_db(server.config["database"])
+                cursor = conn.cursor()
+                cursor = cursor.execute('SELECT * FROM istri LIMIT 1 OFFSET ?', (index,))
+                data = cursor.fetchone()
+                close_db(conn)
+
+                if data:
+                    return json_response({'name': data[1], 'desc': data[2]})
+
+                return json_response({'error': 'Data not found'}, 404)
+            
+            except Exception as e:
+                return json_response({'error': 'An error occured'}, 500)
+            
+        else:
+            return json_response({'error': 'No index provided'}, 400)
+        
+    @server.route('/api/infoall', methods=["GET"])
+    def handle_home_route(request: Request, *args):
+        try:
+            conn = connect_db(server.config["database"])
+            cursor = conn.cursor()
+            cursor = cursor.execute('SELECT * FROM istri')
+            data = cursor.fetchall()
+            close_db(conn)
+
+            if data:
+                result = []
+                for row in data:
+                    result.append({'name': row[1], 'desc': row[2]})
+                return json_response(result)
+
+            return json_response({'error': 'Data not found'}, 404)
+        
+        except Exception as e:
+            return json_response("{'error': 'An error occured'}}", 500)
+    
+    @server.route('/api/info', methods=["POST"])
+    def handle_home_route(request: Request, *args):
+        try:
+            name = request.contents['name']
+            desc = request.contents['desc']
+            if name and desc:
+                conn = connect_db(server.config["database"])
+                cursor = conn.cursor()
+                cursor = cursor.execute('INSERT INTO istri (name, desc) VALUES (?, ?)', (name, desc))
+                close_db(conn)
+                return json_response({'message': 'Addition success'}, 200)
+
+            return json_response({'error': 'Data is invalid'}, 400)
+        
+        except Exception as e:
+            return json_response("{'error': 'An error occured'}}", 500)
+
+    @server.route('/api/info', methods=["PUT"])
+    def handle_home_route(request: Request, *args):
+        index = int(request.query.get('index'))
+        name = request.contents['name']
+        desc = request.contents['desc']
+        try:
+            if name and desc:
+                conn = connect_db(server.config["database"])
+                cursor = conn.cursor()
+                cursor = cursor.execute('UPDATE istri SET name = ?, desc = ? WHERE id = (SELECT id FROM istri LIMIT 1 OFFSET ?)', (name, desc, index))
+                print("Editing entry")
+                close_db(conn)
+
+                if cursor.rowcount > 0:
+                    return json_response({'message': 'Edition success'}, 200)
+
+            return json_response({'error': 'Data is invalid'}, 400)
+        
+        except Exception as e:
+            return json_response("{'error': 'An error occured'}}", 500)
+
+    @server.route('/api/info', methods=["DELETE"])
+    def handle_home_route(request: Request, *args):
+        index = int(request.query.get('index'))
+        try:
+            conn = connect_db(server.config["database"])
+            cursor = conn.cursor()
+            cursor = cursor.execute('DELETE FROM istri WHERE id = (SELECT id FROM istri LIMIT 1 OFFSET ?)', (index,))
+            close_db(conn)
+
+            if cursor.rowcount > 0:
+                return json_response({'message': 'Deletion success'}, 200)
+
+            return json_response({'error': 'Data not found'}, 404)
+        
+        except Exception as e:
+            return json_response("{'error': 'An error occured'}}", 500)
 
 
     # Gas
     server.run()
+
+    #closingan
+    server.stop()
+    close_db(server.config["database"])

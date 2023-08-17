@@ -1,4 +1,4 @@
-from json import loads
+from json import loads, dumps
 
 HTML_ERROR_MESSAGES = {
     100: "Continue",
@@ -68,3 +68,7 @@ def extract_plaintext(query:str):
 def extract_json(query:str):
     query_dict = loads(query)
     return query_dict
+
+def create_json(data:dict):
+    json = dumps(data, indent=4)
+    return json
