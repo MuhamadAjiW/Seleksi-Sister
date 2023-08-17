@@ -49,34 +49,6 @@ class Server():
         @self.route('/favicon.ico')
         def handle_favicon_route(request):
             return Response(content_type='image/webp', content=self.default_icon)
-        
-    def load_static_folder(self, folder_path:str):
-        # Supported files: .html, .css, .js, .webp, .json, .txt
-        # File name must not contain white spaces
-        # Will throw an error if not satisfied
-        for root, dirs, files in os.walk(folder_path):
-            for filename in files:
-                route_name = os.path.join(root, filename).replace('\\', '/')
-
-                if(route_name.find(' ') != -1):
-                    raise Exception(f"File name {route_name} contains spaces. Please remove them.")
-
-                file_type = filename.split('.')[-1]
-
-                if file_type == 'html':
-                    generate_static_response(self, route_name, content_type='text/html', read_type='r')
-                elif file_type == 'css':
-                    generate_static_response(self, route_name, content_type='text/csv', read_type='r')
-                elif file_type == 'js':
-                    generate_static_response(self, route_name, content_type='*/*', read_type='r')
-                elif file_type == 'webp':
-                    generate_static_response(self, route_name, content_type='image/webp', read_type='rb')
-                elif file_type == 'json':
-                    generate_static_response(self, route_name, content_type='application/json', read_type='r')
-                elif file_type == 'txt':
-                    generate_static_response(self, route_name, content_type='text/plain', read_type='r')
-                else:
-                    raise Exception(f"File type {file_type} in static folder is not supported.")
 
     # Base
     def run(self):
@@ -98,6 +70,8 @@ class Server():
                 raise Exception("Methods cannot be None.")
             if(route.find(' ') != -1):
                 raise Exception(f"Route name {route} contains spaces. Please remove them.")
+            if(route.find('?') != -1):
+                raise Exception(f"Route part {route} contains question marks. Please remove them.")
             
             pattern = r'([^<]*)<([^<]+)>'
             vars = re.findall(pattern, route)
@@ -112,6 +86,8 @@ class Server():
                         raise Exception(f"var type {var_type} is not a supported type. Please use str or int.")
                     if prefix.find(' ') != -1:
                         raise Exception(f"Route part {prefix} contains spaces. Please remove them.")
+                    if prefix.find('?') != -1:
+                        raise Exception(f"Route part {prefix} contains question marks. Please remove them.")
 
                     var_comb += var_type + ','
 
@@ -306,6 +282,34 @@ class Server():
         @self.route('/favicon.ico')
         def handle_favicon_route(request):
             return Response(content_type='image/webp', content=self.default_icon)
+        
+    def load_static_folder(self, folder_path:str):
+        # Supported files: .html, .css, .js, .webp, .json, .txt
+        # File name must not contain white spaces
+        # Will throw an error if not satisfied
+        for root, dirs, files in os.walk(folder_path):
+            for filename in files:
+                route_name = os.path.join(root, filename).replace('\\', '/')
+
+                if(route_name.find(' ') != -1):
+                    raise Exception(f"File name {route_name} contains spaces. Please remove them.")
+
+                file_type = filename.split('.')[-1]
+
+                if file_type == 'html':
+                    generate_static_response(self, route_name, content_type='text/html', read_type='r')
+                elif file_type == 'css':
+                    generate_static_response(self, route_name, content_type='text/csv', read_type='r')
+                elif file_type == 'js':
+                    generate_static_response(self, route_name, content_type='*/*', read_type='r')
+                elif file_type == 'webp':
+                    generate_static_response(self, route_name, content_type='image/webp', read_type='rb')
+                elif file_type == 'json':
+                    generate_static_response(self, route_name, content_type='application/json', read_type='r')
+                elif file_type == 'txt':
+                    generate_static_response(self, route_name, content_type='text/plain', read_type='r')
+                else:
+                    raise Exception(f"File type {file_type} in static folder is not supported.")
 
     # Middlewares
     def before_request(self):

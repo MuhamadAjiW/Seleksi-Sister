@@ -61,9 +61,7 @@ def extract_wwwquery(query:str):
     return query_dict
 
 def extract_plaintext(query:str):
-    query_dict = {}
-    query_dict["content"] = query
-    return query_dict
+    return query
 
 def extract_json(query:str):
     query_dict = loads(query)

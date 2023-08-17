@@ -62,12 +62,14 @@ if __name__ == "__main__":
         return "Put response with two ints"
     
 
-    # Semua konten yang dikirim selalu diconvert ke bentuk dictionary
-    # NOTE: Yang bisa diterima: Application/json, application/x-www-form-urlencoded, text/plain
+    # Application/json, Application/x-www-form-urlencoded bakal diubah langsung ke bentuk dictionary
+    # NOTE: Yang bisa diterima: Application/json, Application/x-www-form-urlencoded, text/plain
     @server.route('/api/dummydata/<int>/uhh/<str>', methods=["PUT"])
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
         print("ACCEPT: ", request.acc_type)
+        print("CONTENT-TYPE: ", request.content_type)
+        print("CONTENT-LENGTH: ", request.content_length)
         print("DATA: ", request.contents)
         print("QUERY: ", request.query)
         return "Put response with an int and a str, uhh in between"
@@ -78,6 +80,8 @@ if __name__ == "__main__":
     def handle_home_route(request: Request, *args):
         print("ARGS: ", args)
         print("ACCEPT: ", request.acc_type)
+        print("CONTENT-TYPE: ", request.content_type)
+        print("CONTENT-LENGTH: ", request.content_length)
         print("DATA: ", request.contents)
         print("QUERY: ", request.query)
         return "Post or delete response with an int and a str, uhh in between"
