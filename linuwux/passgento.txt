@@ -1,0 +1,7 @@
+Arch
+root, user1, passnya sama
+qwertyui
+
+Gentoo
+root, user1, passnya sama
+Qwertypop1.
